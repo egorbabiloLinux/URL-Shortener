@@ -7,7 +7,6 @@ import (
 	"time"
 
 	ssov1 "github.com/egorbabiloLinux/protos/gen/go/sso"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"google.golang.org/grpc"
@@ -17,7 +16,6 @@ import (
 
 type Client struct {
     api ssov1.AuthClient
-    log *slog.Logger
 }
 
 func New(
@@ -68,8 +66,8 @@ func (c *Client) IsAdmin(ctx context.Context, userID int64) (bool, error) {
     return resp.IsAdmin, nil
 }
 
-func InterceptorLogger(l *slog.Logger) logging.Logger {
-	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any){
+func InterceptorLogger(l *slog.Logger) grpclog.Logger {
+	return grpclog.LoggerFunc(func(ctx context.Context, lvl grpclog.Level, msg string, fields ...any){
 		l.Log(ctx, slog.Level(lvl), msg, fields...)
 	})
 }
