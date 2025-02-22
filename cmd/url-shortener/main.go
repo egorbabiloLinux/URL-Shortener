@@ -1,16 +1,21 @@
 package main
 
 import (
+	"URL-Shortener/internal/client/sso/grpc"
 	"URL-Shortener/internal/config" // Путь к пакету config
+	"URL-Shortener/internal/http-server/handlers/auth/register"
 	del "URL-Shortener/internal/http-server/handlers/url/delete"
 	"URL-Shortener/internal/http-server/handlers/url/redirect"
 	"URL-Shortener/internal/http-server/handlers/url/save"
+	"URL-Shortener/internal/http-server/middleware/auth"
 	mwLogger "URL-Shortener/internal/http-server/middleware/logger"
 	"URL-Shortener/internal/lib/logger/sl"
 	"URL-Shortener/internal/storage/postgres"
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -35,6 +40,18 @@ func main() {
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	grpcAuth, err := grpc.New(ctx, log, cfg.SSOGrpcAddr, cfg.SSOGrpcTimeout, 3)
+	if err != nil {
+		log.Error("failed to initialize gRPC permission provider", sl.Err(err))
+
+		os.Exit(1)
+	}
+
+	authMiddleware := auth.New(log, cfg.AppSecret, permProvider)
 	
 	router := chi.NewRouter()
   
@@ -51,15 +68,15 @@ func main() {
 	Полезно для обработки запросов, где формат (например, JSON, XML) определяет, как должен выглядеть ответ. */
 
 	router.Route("/url", func(r chi.Router) {
-		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
-			cfg.HTTPServer.User: cfg.HTTPServer.Password,
-		}))
+		r.Use(authMiddleware)
 
 		r.Post("/", save.New(log, storage)) // для POST /url
 		r.Delete("/{alias}", del.New(log, storage)) // для DELETE /url/{alias}
 	})
 
 	router.Get("/{alias}", redirect.New(log, storage))
+
+	router.Post("/register", register.New(log, grpcAuth))
 
 	server := http.Server {
 		Addr: cfg.Address,
