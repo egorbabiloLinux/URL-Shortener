@@ -69,7 +69,7 @@ func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
 
 		log.Info("request body decoded", slog.Any("req", req))
 
-		if err := validator.New().Struct(req); err != nil {
+		if err := validator.New().Struct(&req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			log.Error("invalid request", sl.Err(err))
 
@@ -98,9 +98,9 @@ func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
 
 		uid, err := authClient.Register(r.Context(), email, password)
 		if err != nil {
-			log.Error("failed to authenticate user", sl.Err(err))
+			log.Error("failed to register user", sl.Err(err))
 
-			render.JSON(w, r, resp.Error("failed to authenticate user"))
+			render.JSON(w, r, resp.Error("failed to register user"))
 
 			return
 		}

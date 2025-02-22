@@ -44,14 +44,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	grpcAuth, err := grpc.New(ctx, log, cfg.SSOGrpcAddr, cfg.SSOGrpcTimeout, 3)
+	grpcAuth, err := grpc.New(ctx, log, cfg.SSOAddr, cfg.SSOTimeout, cfg.SSORetries)
 	if err != nil {
-		log.Error("failed to initialize gRPC permission provider", sl.Err(err))
+		log.Error("failed to initialize gRPC auth client", sl.Err(err))
 
 		os.Exit(1)
 	}
 
-	authMiddleware := auth.New(log, cfg.AppSecret, permProvider)
+	isAdminMiddleware := auth.New(log, cfg.AppSecret, grpcAuth)
 	
 	router := chi.NewRouter()
   
@@ -68,15 +68,16 @@ func main() {
 	Полезно для обработки запросов, где формат (например, JSON, XML) определяет, как должен выглядеть ответ. */
 
 	router.Route("/url", func(r chi.Router) {
-		r.Use(authMiddleware)
+		r.Use(isAdminMiddleware)
 
 		r.Post("/", save.New(log, storage)) // для POST /url
 		r.Delete("/{alias}", del.New(log, storage)) // для DELETE /url/{alias}
 	})
-
+	
 	router.Get("/{alias}", redirect.New(log, storage))
 
 	router.Post("/register", register.New(log, grpcAuth))
+	router.Post("/login", register.New(log, grpcAuth))
 
 	server := http.Server {
 		Addr: cfg.Address,

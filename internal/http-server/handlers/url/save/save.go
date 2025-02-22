@@ -74,7 +74,7 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		log.Info("request body decoded", slog.Any("req", req)) // slog.Any принимает значение,
 		// определяет его тип и автоматически преобразует его в строку или другой подходящий формат для включения в лог.
 
-		if err := validator.New().Struct(req); err != nil { // «required,url» в объекте Request — он как раз будет использован валидатором.
+		if err := validator.New().Struct(&req); err != nil { // «required,url» в объекте Request — он как раз будет использован валидатором.
 			validateErr := err.(validator.ValidationErrors)
 
 			log.Error("invalid request", sl.Err(err))
