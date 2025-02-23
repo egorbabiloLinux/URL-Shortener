@@ -33,7 +33,7 @@ type Response struct {
 type Request struct {
 	Email string 	`json:"email"`
 	Password string `json:"password"`
-	AppID int32 	`json:"appId"`
+	AppID int32 	`json:"app_id"`
 }
 
 func responseOK(w http.ResponseWriter, r *http.Request, token string) {

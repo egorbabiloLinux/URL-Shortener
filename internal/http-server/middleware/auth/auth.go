@@ -83,7 +83,7 @@ func New(
 			}
 
 			ctx := context.WithValue(r.Context(), uidKey, uid)
-			ctx = context.WithValue(r.Context(), isAdminKey, isAdmin)
+			ctx = context.WithValue(ctx, isAdminKey, isAdmin)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -103,6 +103,11 @@ func ExtractBearerToken(r *http.Request) string {
 func UIDFromContext(ctx context.Context) (int64, bool) {
 	uid, ok := ctx.Value(uidKey).(int64)
 	return uid, ok
+}
+
+func IsAdminFromContext(ctx context.Context) (bool, bool) {
+	isAdmin, ok := ctx.Value(isAdminKey).(bool)
+	return isAdmin, ok
 }
 
 func ErrorFromContext(ctx context.Context) (error, bool) {

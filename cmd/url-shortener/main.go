@@ -3,6 +3,7 @@ package main
 import (
 	"URL-Shortener/internal/client/sso/grpc"
 	"URL-Shortener/internal/config" // Путь к пакету config
+	"URL-Shortener/internal/http-server/handlers/auth/login"
 	"URL-Shortener/internal/http-server/handlers/auth/register"
 	del "URL-Shortener/internal/http-server/handlers/url/delete"
 	"URL-Shortener/internal/http-server/handlers/url/redirect"
@@ -73,11 +74,11 @@ func main() {
 		r.Post("/", save.New(log, storage)) // для POST /url
 		r.Delete("/{alias}", del.New(log, storage)) // для DELETE /url/{alias}
 	})
-	
+
 	router.Get("/{alias}", redirect.New(log, storage))
 
 	router.Post("/register", register.New(log, grpcAuth))
-	router.Post("/login", register.New(log, grpcAuth))
+	router.Post("/login", login.New(log, grpcAuth))
 
 	server := http.Server {
 		Addr: cfg.Address,
