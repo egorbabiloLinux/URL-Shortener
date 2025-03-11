@@ -12,14 +12,14 @@ import (
 type Config struct {
 	Env         string `mapstructure:"env"`
 	StoragePath string `mapstructure:"storage_path"`
-	AppSecret string   `mapstructure:"app_secret"`
+	AppSecret   string `mapstructure:"app_secret"`
 	HTTPServer  	   `mapstructure:"http_server"`
 	SSOServer		   `mapstructure:"sso_server"`
 }
 
 type SSOServer struct {
 	SSOAddr 	string 		  `mapstructure:"grpc_addr"`
-	SSOTimeout time.Duration  `mapstructure:"grpc_timeout"`
+	SSOTimeout  time.Duration `mapstructure:"grpc_timeout"`
 	SSORetries 	int 		  `mapstructure:"retries"`
 }
 
