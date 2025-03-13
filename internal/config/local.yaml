@@ -1,7 +1,6 @@
-env: "local" # Окружение - local, dev или prod
-storage_path: "./storage/storage.db" # файл, в котором будет храниться наша БД
+env: "local" # local, dev, prod
 app_secret: "d375b6921edc83bb3a5d6bb3467a2f04c00b2017d78b50d147d804c95e262883"
-http_server: # конфигурация нашего http-сервера
+http_server:
   address: "localhost:8082"
   timeout: 4s
   idle_timeout: 30s
