@@ -23,12 +23,13 @@ func main() {
 	flag.StringVar(&migrationsTable, "migrations-table", "migrations", "Name of migrations table")
 	flag.BoolVar(&doDown, "down", false, "Run down migrations")
 	flag.IntVar(&force, "force", 0, "Set migrations version")
+	flag.Parse()
 
 	if migrationsPath == "" {
 		panic("migrations-path is required")
 	}
 
-	url := os.Getenv("DATABSE_URL")
+	url := os.Getenv("DATABASE_URL")
 	if url == "" {
 		panic("DATABASE_URL is required")
 	}

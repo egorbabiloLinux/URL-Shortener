@@ -37,7 +37,7 @@ func main() {
 	log.Info("Initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode enabled")
 
-	storage, err := postgres.NewStorage("postgres://postgres:3547@localhost:5432/urlshortener")
+	storage, err := postgres.NewStorage(cfg.DB.URL)
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}

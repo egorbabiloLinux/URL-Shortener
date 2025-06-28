@@ -15,27 +15,17 @@ type Storage struct {
 	db *pgxpool.Pool
 }
 
-func NewStorage(dsn string) (*Storage, error) {
+//TODO: make stop function
+
+func NewStorage(url string) (*Storage, error) {
 	const op = "storage.postgres.NewStorage"
 
-	db, err := pgxpool.New(context.Background(), dsn)
+	db, err := pgxpool.New(context.Background(), url)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", op, err)
 	}
 
 	if err := db.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("%s: %v", op, err)
-	}
-
-	stmt := `
-	CREATE TABLE IF NOT EXISTS url (
-		id SERIAL PRIMARY KEY, 
-		alias TEXT NOT NULL UNIQUE,
-		url TEXT NOT NULL
-	);
-	CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);`
-
-	if _, err := db.Exec(context.Background(), stmt); err != nil {
 		return nil, fmt.Errorf("%s: %v", op, err)
 	}
 

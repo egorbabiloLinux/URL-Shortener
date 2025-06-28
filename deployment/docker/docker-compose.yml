@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16.8
-    enviroment:
+    environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
@@ -17,4 +17,33 @@ services:
       timeout: 5s
       retries: 5
     
+  migrator:
+    build: 
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.migrator
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - url-shortener-network
+
+  app:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile
+    environment:
+      CONFIG_PATH: ${CONFIG_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - migrator
+    networks:
+      - url-shortener-network
     
+volumes:
+  postgres_data:
+
+networks:
+  url-shortener-network:
+    driver: bridge     

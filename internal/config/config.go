@@ -10,11 +10,15 @@ import (
 )
 
 type Config struct {
-	Env         string `mapstructure:"env"`
-	StoragePath string `mapstructure:"storage_path"`
-	AppSecret   string `mapstructure:"app_secret"`
-	HTTPServer  	   `mapstructure:"http_server"`
-	SSOServer		   `mapstructure:"sso_server"`
+	Env         string 	 `mapstructure:"env"`
+	DB 			DBConfig `mapstructure:"database" validate:"required"`
+	AppSecret   string   `mapstructure:"app_secret"`
+	HTTPServer  	     `mapstructure:"http_server"`
+	SSOServer		     `mapstructure:"sso_server"`
+}
+
+type DBConfig struct {
+	URL string `mapstructure:"url" validate:"required"`
 }
 
 type SSOServer struct {
@@ -36,7 +40,11 @@ func MustLoad() *Config {
 
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		log.Fatal("CONFIG_PATH enviroment variable is not set")
+		log.Fatal("CONFIG_PATH environment variable is not set")
+	}
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		panic("config file does not exists: " + configPath)
 	}
 
 	v.SetConfigFile(configPath)
@@ -56,6 +64,10 @@ func MustLoad() *Config {
 	v.SetDefault("sso_server.grpc_addr", "localhost:44044")
 	v.SetDefault("sso_server.grpc_timeout", "5s")
 	v.SetDefault("sso_server.retries", 3)
+
+	if dbUrl := os.Getenv("DATABASE_URL"); dbUrl != "" {
+		v.Set("database.url", dbUrl)
+	}
 
 	var cfg Config
 
