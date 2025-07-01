@@ -17,7 +17,7 @@ COPY --from=builder /app/url-shortener .
 COPY ./internal/config ./config
 COPY ./tests ./tests
 
-EXPOSE 44044
+EXPOSE 8082
 
 RUN apk add libc6-compat
 

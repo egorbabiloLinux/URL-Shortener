@@ -3,6 +3,7 @@ package tests
 import (
 	"URL-Shortener/internal/http-server/handlers/url/save"
 	"URL-Shortener/internal/lib/random"
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -15,25 +16,100 @@ import (
 const (
 	host = "localhost:8082"
 	passDefaultLen = 10
+	adminEmail = "admin@gmail.com"
+	adminPassword = "1"
 )
 
 const app_id = 1
-
-func TestURLShortener_HappyPath(t *testing.T) {
+func TestAdminActionsURLShortener_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",	
+		Scheme: "http",
 		Host: host,
 	}
 
 	e := httpexpect.Default(t, u.String())
 
+	response := e.POST("/login").WithJSON(map[string]interface{}{
+		"email": adminEmail,
+		"password": adminPassword,
+		"app_id": app_id,
+	}).Expect().Status(http.StatusOK)
+
+	jsonResp := response.JSON().Object()
+
+	token := jsonResp.Value("token").String().Raw()
+	assert.NotEmpty(t, token)
+
+	url := gofakeit.URL()
+	alias := random.NewRandomString(10)
+
+	e.POST("/url").WithJSON(save.Request{
+		URL: url,
+		Alias: alias,
+	}).
+	WithHeader("Authorization", "Bearer " + token).
+	Expect().
+	Status(http.StatusOK).
+	JSON().Object().
+	ContainsKey("alias")
+
+	e.DELETE("/url/" + alias).
+	WithHeader("Authorization", "Bearer " + token).
+	Expect().
+	Status(http.StatusOK).
+	JSON().Object().
+	ContainsKey("id")
+}
+
+func TestUserURLShortener_HappyPath(t *testing.T) {
+	u := url.URL{
+		Scheme: "http",	
+		Host: host,
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	e := httpexpect.WithConfig(httpexpect.Config{
+		BaseURL: u.String(),
+		Client: client,
+		Reporter: httpexpect.NewRequireReporter(t),
+	})
+
+	response := e.POST("/login").WithJSON(map[string]interface{}{
+		"email": adminEmail,
+		"password": adminPassword,
+		"app_id": app_id,
+	}).Expect().Status(http.StatusOK)
+
+	jsonResp := response.JSON().Object()
+
+	token := jsonResp.Value("token").String().Raw()
+	assert.NotEmpty(t, token)
+
+	url := gofakeit.URL()
+	alias := random.NewRandomString(10)
+
+	e.POST("/url").WithJSON(save.Request{
+		URL: url,
+		Alias: alias,
+	}).
+	WithHeader("Authorization", "Bearer " + token).
+	Expect().
+	Status(http.StatusOK).
+	JSON().Object().
+	ContainsKey("alias")
+
 	email := gofakeit.Email()
 	password := randomFakePassword()
 
-	response := e.POST("/register").WithJSON(map[string]string{
+	response = e.POST("/register").WithJSON(map[string]string{
 		"email": email,
 		"password": password,
-	}).Expect().Status(200)
+	}).Expect().Status(http.StatusOK)
 
 	respJson := response.JSON().Object()
 
@@ -47,22 +123,17 @@ func TestURLShortener_HappyPath(t *testing.T) {
 		"email": email,
 		"password": password,
 		"app_id": app_id,
-	}).Expect().Status(200)
-
+	}).Expect().Status(http.StatusOK)
 	respJson = response.JSON().Object()
 
-	token := respJson.Value("token").String().Raw()
+	token = respJson.Value("token").String().Raw()
 	assert.NotEmpty(t, token)
 
-	e.POST("/url").WithJSON(save.Request{
-		URL: gofakeit.URL(),
-		Alias: random.NewRandomString(10),
-	}).
+	e.GET("/" + alias).
 	WithHeader("Authorization", "Bearer " + token).
 	Expect().
-	Status(200).
-	JSON().Object().
-	ContainsKey("alias")
+	Status(http.StatusFound).
+	Header("Location").IsEqual(url)
 }
 
 func randomFakePassword() string {

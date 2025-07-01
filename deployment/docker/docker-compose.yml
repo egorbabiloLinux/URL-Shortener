@@ -8,9 +8,9 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/postgres_data
+      - app_postgres_data:/var/lib/postgresql/data
     networks:
-      - url-shortener-network
+      - url-shortener-shared-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -27,23 +27,27 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - url-shortener-network
+      - url-shortener-shared-network
 
   app:
     build:
       context: ../../
       dockerfile: deployment/docker/Dockerfile
+    ports:
+      - "8082:8082" #TODO: do through .env file
     environment:
       CONFIG_PATH: ${CONFIG_PATH}
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - migrator
     networks:
-      - url-shortener-network
+      - url-shortener-shared-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     
 volumes:
-  postgres_data:
+  app_postgres_data:
 
 networks:
-  url-shortener-network:
-    driver: bridge     
+  url-shortener-shared-network:
+    external: true

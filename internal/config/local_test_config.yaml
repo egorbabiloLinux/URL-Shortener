@@ -1,12 +1,12 @@
 env: "local" # local, dev, prod
 app_secret: "test-secret"
 http_server:
-  address: "localhost:8082"
+  address: ":8082"
   timeout: 4s
   idle_timeout: 30s
   user: "my_user"
   password: "my_pass"
 sso_server:
-  grpc_addr: "localhost:44044"
+  grpc_addr: ":44044"
   grpc_timeout: 5s
   retries: 3
