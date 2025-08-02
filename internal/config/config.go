@@ -16,6 +16,7 @@ type Config struct {
 	HTTPServer  	     `mapstructure:"http_server"`
 	SSOServer		     `mapstructure:"sso_server"`
 	KafkaProducer 		 `mapstructure:"kafka_producer"`
+	KafkaProducerAdapter // TODO
 }
 
 type DBConfig struct {
@@ -46,6 +47,34 @@ type KafkaProducer struct {
 	SSLTruststorePassword 			   string `mapstructure:"ssl_truststore_password" validate:"required"`
 	SSLEndpointIdentificationAlgorithm string `mapstructure:"ssl_endpoint_identification_algorithm" validate:"required"`
 }
+
+type KafkaProducerAdapter struct {
+	Config KafkaProducer
+}
+
+func (k KafkaProducerAdapter) Get(key string) (string, bool) {
+	switch key {
+	case "bootstrap.servers":
+		return k.Config.BootstrapServers, true
+	case "sasl.username":
+		return k.Config.SaslUsername, true
+	case "sasl.password":
+		return k.Config.SaslPassword, true
+	case "ssl.keystore.location":
+		return k.Config.SSLKeystoreLocation, true
+	case "ssl.keystore.password":
+		return k.Config.SSLKeystorePassword, true
+	case "ssl.truststore.location":
+		return k.Config.SSLTruststoreLocation, true
+	case "ssl.truststore.password":
+		return k.Config.SSLTruststorePassword, true
+	case "ssl.endpoint.identification.algorithm":
+		return k.Config.SSLEndpointIdentificationAlgorithm, true
+	default:
+		return "", false
+	}
+}
+
 
 func MustLoad() *Config {
 	v := viper.New()
@@ -97,7 +126,7 @@ func MustLoad() *Config {
 	var cfg Config
 
 	if err := v.Unmarshal(&cfg); err != nil {
-		log.Fatalf("error unmarshalling config: %s", err)
+		log.Fatalf("error unmarshaling config: %s", err)
 	}
 
 	if err := validator.New().Struct(cfg); err != nil {

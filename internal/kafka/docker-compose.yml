@@ -1,5 +1,3 @@
-version: "3.5"
-
 services:
   kafka-0:
     container_name: kafka-0
@@ -47,10 +45,10 @@ services:
       - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
       # COMMON SETTINGS
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-      - EXTRA_ARGS=-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-0.19.0.jar=9404:/opt/jmx-exporter/kafka-3_0_0.yml
     volumes:
+      - ./admin.properties:/opt/bitnami/kafka/config/admin.properties:ro
+      - ./client.properties.da:/opt/bitnami/kafka/config/client.properties.da:ro
       - kafka_0_data:/bitnami/kafka
-      - ./jmx-exporter:/opt/jmx-exporter
       - ./keystore/kafka-0.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
       - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
     healthcheck:
@@ -106,10 +104,8 @@ services:
       - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
       # COMMON SETTINGS
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-      - EXTRA_ARGS=-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-0.19.0.jar=9404:/opt/jmx-exporter/kafka-3_0_0.yml
     volumes:
       - kafka_1_data:/bitnami/kafka
-      - ./jmx-exporter:/opt/jmx-exporter
       - ./keystore/kafka-1.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
       - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
     healthcheck:
@@ -165,10 +161,8 @@ services:
       - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
       # COMMON SETTINGS
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-      - EXTRA_ARGS=-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-0.19.0.jar=9404:/opt/jmx-exporter/kafka-3_0_0.yml
     volumes:
       - kafka_2_data:/bitnami/kafka
-      - ./jmx-exporter:/opt/jmx-exporter
       - ./keystore/kafka-2.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
       - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
     healthcheck:
@@ -177,6 +171,47 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+  
+  kafka-init:
+    image: docker.io/bitnami/kafka:3.7
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+    networks:
+      - kafka
+    environment:
+      - KAFKA_HEAP_OPTS=-Xms128m -Xmx512m
+    entrypoint: 
+      - /bin/bash
+      - -c 
+      - | 
+
+        until kafka-topics.sh --bootstrap-server kafka-0:9091 \
+          --command-config /opt/bitnami/kafka/config/client.properties.da \
+          --list >/dev/null 2>&1; do
+          echo "Waiting for Kafka to be ready..."
+          sleep 3
+        done
+
+        kafka-acls.sh --bootstrap-server kafka-0:9091 \
+        --command-config /opt/bitnami/kafka/config/admin.properties \
+        --add \
+        --allow-principal User:da \
+        --operation Create \
+        --topic auth-topic 
+
+        kafka-topics.sh --bootstrap-server kafka-0:9091 \
+        --command-config /opt/bitnami/kafka/config/client.properties.da \
+        --create --topic auth-topic \
+        --partitions 3 \
+        --replication-factor 3 \
+        --if-not-exists
+
+    volumes: 
+      - ./admin.properties:/opt/bitnami/kafka/config/admin.properties:ro
+      - ./client.properties.da:/opt/bitnami/kafka/config/client.properties.da:ro
+      - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
+      - ./keystore/kafka.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
 
 volumes:
   kafka_0_data:

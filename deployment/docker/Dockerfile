@@ -15,7 +15,6 @@ WORKDIR /app
 
 COPY --from=builder /app/url-shortener .
 COPY ./internal/config ./config
-COPY ./tests ./tests
 
 EXPOSE 8082
 

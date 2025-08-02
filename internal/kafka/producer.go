@@ -21,6 +21,7 @@ type KafkaProducer struct {
 	*kafka.Producer
 }
 
+
 func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 	get := func(key string) string {
 		val, _ := cfg.Get(key)
@@ -39,7 +40,6 @@ func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 		"ssl.truststore.password" : 			  get("ssl.truststore.password"),
 		"ssl.endpoint.identification.algorithm" : get("ssl.endpoint.identification.algorithm"), //TODO проверить 
 	})
-
 	if err != nil {
 		return nil, err 
 	}
@@ -67,7 +67,7 @@ func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 	}, nil
 }
 
-func (p *KafkaProducer) ProduceEvent(ev Event, topic string) {
+func (p *KafkaProducer) ProduceEvent(ev Event, topic string) error {
 	const op = "event.ProduceEvent"
 
 	value, err := ev.Value()
@@ -77,7 +77,7 @@ func (p *KafkaProducer) ProduceEvent(ev Event, topic string) {
 		sl.Err(err))
 	}
 
-	p.Produce(&kafka.Message{
+	return p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key: ev.Key(),
 		Value: value,
