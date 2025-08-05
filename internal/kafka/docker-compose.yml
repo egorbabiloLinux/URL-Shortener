@@ -8,7 +8,7 @@ services:
       - "29095:9404"
     restart: always
     networks:
-      - kafka  
+      - url-shortener-shared-network  
     environment:
       # KAFKA CLUSTER
       - KAFKA_CFG_NODE_ID=0
@@ -67,7 +67,7 @@ services:
       - "29096:9404"
     restart: always
     networks:
-      - kafka  
+      - url-shortener-shared-network  
     environment:
       # KAFKA CLUSTER
       - KAFKA_CFG_NODE_ID=1
@@ -124,7 +124,7 @@ services:
       - "29097:9404"
     restart: always
     networks:
-      - kafka  
+      - url-shortener-shared-network  
     environment:
       # KAFKA CLUSTER
       - KAFKA_CFG_NODE_ID=2
@@ -178,7 +178,7 @@ services:
       kafka-0:
         condition: service_healthy
     networks:
-      - kafka
+      - url-shortener-shared-network
     environment:
       - KAFKA_HEAP_OPTS=-Xms128m -Xmx512m
     entrypoint: 
@@ -219,4 +219,5 @@ volumes:
   kafka_2_data:
 
 networks:
-  kafka:
+  url-shortener-shared-network:
+    external: true

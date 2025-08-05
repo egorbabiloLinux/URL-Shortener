@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"URL-Shortener/internal/lib/logger/sl"
+	"fmt"
 	"log/slog"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -29,16 +30,16 @@ func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 	}
 
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers" : 					  get("bootstrap.servers"),
-		"security.protocol" : 					  "SASL_SSL",
-		"sasl.mechanisms" : 					  "PLAIN",
-		"sasl.username" : 						  get("sasl.username"),
-		"sasl.password" : 						  get("sasl.password"),
-		"ssl.keystore.location" : 			      get("ssl.keystore.location"), //TODO переделать в pem
-		"ssl.keystore.password" : 				  get("ssl.keystore.password"),
-		"ssl.truststore.location" : 			  get("ssl.truststore.location"), //TODO переделать в pem
-		"ssl.truststore.password" : 			  get("ssl.truststore.password"),
-		"ssl.endpoint.identification.algorithm" : get("ssl.endpoint.identification.algorithm"), //TODO проверить 
+		"bootstrap.servers" : 		get("bootstrap.servers"),
+		"security.protocol" : 		"SASL_SSL",
+		
+		"sasl.mechanisms" : 		"PLAIN",
+		"sasl.username" : 			get("sasl.username"),
+		"sasl.password" : 			get("sasl.password"),
+		
+		"ssl.key.location": 		get("ssl.key.location"),
+		"ssl.certificate.location": get("ssl.certificate.location"),
+		"ssl.ca.location": 			get("ssl.ca.location"),
 	})
 	if err != nil {
 		return nil, err 
@@ -52,10 +53,10 @@ func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 						log.Error("Failed to deliver message", 
 						slog.String("partition", *ev.TopicPartition.Topic))
 					} else {
-						log.Info("Produced event to topic %s: key = %s, value = %s",
+						log.Info(fmt.Sprintf("Produced event to topic %s: key = %s, value = %s",
 						slog.String("topic", *ev.TopicPartition.Topic), 
 						slog.String("key", string(ev.Key)), 
-						slog.String("key", string(ev.Value)))
+						slog.String("key", string(ev.Value))))
 					}
 			}
 		}
