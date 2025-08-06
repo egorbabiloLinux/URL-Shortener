@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Env         string 	 `mapstructure:"env"`
-	DB 			DBConfig `mapstructure:"database" validate:"required"`
-	AppSecret   string   `mapstructure:"app_secret"`
-	HTTPServer  	     `mapstructure:"http_server"`
-	SSOServer		     `mapstructure:"sso_server"`
-	KafkaProducer 		 `mapstructure:"kafka_producer"`
-	KafkaProducerAdapter // TODO
+	Env         string 	 	  `mapstructure:"env"`
+	DB 			DBConfig 	  `mapstructure:"database" validate:"required"`
+	AppSecret   string   	  `mapstructure:"app_secret"`
+	HTTPServer  	     	  `mapstructure:"http_server"`
+	SSOServer		     	  `mapstructure:"sso_server"`
+	Kafka 		KafkaProducer `mapstructure:"kafka_producer"`
 }
 
 type DBConfig struct {
@@ -41,35 +41,28 @@ type KafkaProducer struct {
 	BootstrapServers 				   string `mapstructure:"bootstrap_servers" validate:"required"`
 	SaslUsername 					   string `mapstructure:"sasl_username" validate:"required"`
 	SaslPassword 					   string `mapstructure:"sasl_password" validate:"required"`
-	SSLKeystoreLocation 		       string `mapstructure:"ssl_keystore_location" validate:"required"`
-	SSLKeystorePassword 			   string `mapstructure:"ssl_keystore_password" validate:"required"`
-	SSLTruststoreLocation 		       string `mapstructure:"ssl_truststore_location" validate:"required"`
-	SSLTruststorePassword 			   string `mapstructure:"ssl_truststore_password" validate:"required"`
-	SSLEndpointIdentificationAlgorithm string `mapstructure:"ssl_endpoint_identification_algorithm" validate:"required"`
+	SSLKeyLocation 		 		 	   string `mapstructure:"ssl_key_location" validate:"required"`
+	SSLCertificateLocation 		 	   string `mapstructure:"ssl_certificate_location" validate:"required"`
+	SSLCaLocation		 		 	   string `mapstructure:"ssl_ca_location" validate:"required"`
+	SSLEndpointIdentificationAlgorithm string `mapstructure:"ssl_endpoint_identification_algorithm"`
 }
 
-type KafkaProducerAdapter struct {
-	Config KafkaProducer
-}
-
-func (k KafkaProducerAdapter) Get(key string) (string, bool) {
+func (k KafkaProducer) Get(key string) (string, bool) {
 	switch key {
 	case "bootstrap.servers":
-		return k.Config.BootstrapServers, true
+		return k.BootstrapServers, true
 	case "sasl.username":
-		return k.Config.SaslUsername, true
+		return k.SaslUsername, true
 	case "sasl.password":
-		return k.Config.SaslPassword, true
-	case "ssl.keystore.location":
-		return k.Config.SSLKeystoreLocation, true
-	case "ssl.keystore.password":
-		return k.Config.SSLKeystorePassword, true
-	case "ssl.truststore.location":
-		return k.Config.SSLTruststoreLocation, true
-	case "ssl.truststore.password":
-		return k.Config.SSLTruststorePassword, true
+		return k.SaslPassword, true
+	case "ssl.key.location":
+		return k.SSLKeyLocation, true
+	case "ssl.certificate.location":
+		return k.SSLCertificateLocation, true
+	case "ssl.ca.location":
+		return k.SSLCaLocation, true
 	case "ssl.endpoint.identification.algorithm":
-		return k.Config.SSLEndpointIdentificationAlgorithm, true
+		return k.SSLEndpointIdentificationAlgorithm, true
 	default:
 		return "", false
 	}
@@ -77,6 +70,11 @@ func (k KafkaProducerAdapter) Get(key string) (string, bool) {
 
 
 func MustLoad() *Config {
+	err := godotenv.Load("./config/.env")
+	if err != nil {
+	 	log.Println(".env file not found or failed to load, skipping: " + err.Error())
+	}
+	
 	v := viper.New()
 
 	configPath := os.Getenv("CONFIG_PATH")
@@ -107,14 +105,13 @@ func MustLoad() *Config {
 	v.SetDefault("sso_server.retries", 3)
 
 	envBindings := map[string]string{
-		"database.url":                          "DATABASE_URL",
-		"kafka_producer.bootstrap_servers":      "KAFKA_BOOTSTRAP_SERVERS",
-		"kafka_producer.sasl_username":          "KAFKA_SASL_USERNAME",
-		"kafka_producer.sasl_password":          "KAFKA_SASL_PASSWORD",
-		"kafka_producer.ssl_keystore_location":  "KAFKA_SSL_KEYSTORE_LOCATION",
-		"kafka_producer.ssl_keystore_password":  "KAFKA_SSL_KEYSTORE_PASSWORD",
-		"kafka_producer.ssl_truststore_location":"KAFKA_SSL_TRUSTSTORE_LOCATION",
-		"kafka_producer.ssl_truststore_password":"KAFKA_SSL_TRUSTSTORE_PASSWORD",
+		"database.url":                            "DATABASE_URL",
+		"kafka_producer.bootstrap_servers":        "KAFKA_BOOTSTRAP_SERVERS",
+		"kafka_producer.sasl_username":            "KAFKA_SASL_USERNAME",
+		"kafka_producer.sasl_password":            "KAFKA_SASL_PASSWORD",
+		"kafka_producer.ssl_key_location":         "KAFKA_SSL_KEY_LOCATION",
+		"kafka_producer.ssl_certificate_location": "KAFKA_SSL_CERTIFICATE_LOCATION",
+		"kafka_producer.ssl_ca_location":          "KAFKA_SSL_CA_LOCATION",
 	}
 
 	for key, envVar := range envBindings {

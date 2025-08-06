@@ -1,12 +1,14 @@
 package register
 
 import (
+	"URL-Shortener/internal/event"
 	resp "URL-Shortener/internal/lib/api/response"
 	"URL-Shortener/internal/lib/logger/sl"
 	"context"
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"log/slog"
 
@@ -21,6 +23,13 @@ type AuthClient interface {
 		email string, 
 		password string,
 	) (int64, error)
+}
+
+type KafkaProducer interface {
+	ProduceEvent(
+		ev event.Event, 
+		topic string,
+	) error
 }
 
 type Response struct {
@@ -40,7 +49,7 @@ func responseOK(w http.ResponseWriter, r *http.Request, uid int64) {
 	})
 }
 
-func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
+func New(log *slog.Logger, authClient AuthClient, kafka KafkaProducer) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Register.New"
 
@@ -103,6 +112,17 @@ func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
 			render.JSON(w, r, resp.Error("failed to register user"))
 
 			return
+		}
+
+		registerEvent := event.AuthEvent{
+			Type: "register",
+			Email: email,
+			TimeStamp: time.Now(),
+		}
+
+		err = kafka.ProduceEvent(registerEvent, "auth-topic")
+		if err != nil {
+			log.Error("failed to produce register event")
 		}
 
 		responseOK(w, r, uid)

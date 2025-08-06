@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+type Event interface {
+	Key() []byte
+	Value() ([]byte, error)
+}
+
 type AuthEvent struct {
 	Type 	  string 	`json:"type"`
 	Email 	  string 	`json:"email"`

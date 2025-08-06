@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"log/slog"
 
+	"URL-Shortener/internal/event"
 	resp "URL-Shortener/internal/lib/api/response"
 	"URL-Shortener/internal/lib/logger/sl"
 
@@ -36,6 +38,13 @@ type Request struct {
 	AppID int32 	`json:"app_id"`
 }
 
+type KafkaProducer interface {
+	ProduceEvent(
+		ev event.Event, 
+		topic string,
+	) error
+}
+
 func responseOK(w http.ResponseWriter, r *http.Request, token string) {
 	render.JSON(w, r, Response {
 		Response: resp.OK(),
@@ -43,7 +52,7 @@ func responseOK(w http.ResponseWriter, r *http.Request, token string) {
 	})
 }
 
-func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
+func New(log *slog.Logger, authClient AuthClient, kafka KafkaProducer) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.login.New"
 
@@ -114,6 +123,17 @@ func New(log *slog.Logger, authClient AuthClient) http.HandlerFunc {
 			render.JSON(w, r, resp.Error("failed to login user"))
 
 			return
+		}
+
+		loginEvent := event.AuthEvent{
+			Type: "login",
+			Email: email,
+			TimeStamp: time.Now(),
+		}
+
+		err = kafka.ProduceEvent(loginEvent, "auth-topic")
+		if err != nil {
+			log.Error("failed to produce login event")
 		}
 
 		responseOK(w, r, token)

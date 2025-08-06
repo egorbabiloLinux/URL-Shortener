@@ -24,7 +24,7 @@ func TestKafkaSendMessage(t *testing.T) {
 	cfg := config.MustLoad()
 	log := setupLogger(cfg.Env)
 
-	p, err := kafka.NewProducer(cfg.KafkaProducerAdapter, log)
+	p, err := kafka.NewProducer(cfg.Kafka, log)
 	if err != nil {
 		t.Fatalf("failed to create kafka producer: %v", err)
 	}

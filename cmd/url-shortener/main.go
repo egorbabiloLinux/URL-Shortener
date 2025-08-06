@@ -10,6 +10,7 @@ import (
 	"URL-Shortener/internal/http-server/handlers/url/save"
 	"URL-Shortener/internal/http-server/middleware/auth"
 	mwLogger "URL-Shortener/internal/http-server/middleware/logger"
+	"URL-Shortener/internal/kafka"
 	"URL-Shortener/internal/lib/logger/sl"
 	"URL-Shortener/internal/storage/postgres"
 	"context"
@@ -45,6 +46,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	kafkaProducer, err := kafka.NewProducer(cfg.Kafka, log)
+	if err != nil {
+		log.Error("failed to initialize kafka producer")
+
+		// Later may to add os.Exit
+	}
+
 	grpcAuth, err := grpc.New(ctx, log, cfg.SSOAddr, cfg.SSOTimeout, cfg.SSORetries)
 	if err != nil {
 		log.Error("failed to initialize gRPC auth client", sl.Err(err))
@@ -77,8 +85,8 @@ func main() {
 
 	router.Get("/{alias}", redirect.New(log, storage))
 
-	router.Post("/register", register.New(log, grpcAuth))
-	router.Post("/login", login.New(log, grpcAuth))
+	router.Post("/register", register.New(log, grpcAuth, kafkaProducer))
+	router.Post("/login", login.New(log, grpcAuth, kafkaProducer))
 
 	server := http.Server {
 		Addr: cfg.Address,

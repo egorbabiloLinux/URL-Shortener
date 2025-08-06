@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"URL-Shortener/internal/event"
 	"URL-Shortener/internal/lib/logger/sl"
 	"fmt"
 	"log/slog"
@@ -10,11 +11,6 @@ import (
 
 type ProducerConfig interface {
 	Get(key string) (string, bool)
-}
-
-type Event interface {
-	Key() []byte
-	Value() ([]byte, error)
 }
 
 type KafkaProducer struct {
@@ -68,7 +64,7 @@ func NewProducer(cfg ProducerConfig, log *slog.Logger) (*KafkaProducer, error) {
 	}, nil
 }
 
-func (p *KafkaProducer) ProduceEvent(ev Event, topic string) error {
+func (p *KafkaProducer) ProduceEvent(ev event.Event, topic string) error {
 	const op = "event.ProduceEvent"
 
 	value, err := ev.Value()
