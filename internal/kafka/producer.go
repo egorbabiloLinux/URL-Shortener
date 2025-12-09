@@ -75,7 +75,7 @@ func (p *KafkaProducer) ProduceEvent(ev event.Event, topic string) error {
 	}
 
 	return p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny/*balancer.Balance(ev.Key(), 0, 1)*/}, //TODO
 		Key: ev.Key(),
 		Value: value,
 	}, nil)
